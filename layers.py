@@ -93,6 +93,7 @@ class RNNEncoder(nn.Module):
                            dropout=drop_prob if num_layers > 1 else 0.)
 
     def forward(self, x, lengths):
+        lengths = torch.tensor(lengths, device=torch.device('cpu'))
         # Save original padded length for use by pad_packed_sequence
         orig_len = x.size(1)
 
