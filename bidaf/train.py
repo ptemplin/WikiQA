@@ -12,16 +12,16 @@ import torch.nn.functional as F
 import torch.optim as optim
 import torch.optim.lr_scheduler as sched
 import torch.utils.data as data
-import util
+from bidaf import util
 
-from args import get_train_args
+from bidaf.args import get_train_args
 from collections import OrderedDict
 from json import dumps
-from models import BiDAF
+from bidaf.models import BiDAF
 from tensorboardX import SummaryWriter
 from tqdm import tqdm
 from ujson import load as json_load
-from util import collate_fn, SQuAD
+from bidaf.util import collate_fn, SQuAD
 
 
 def main(args):

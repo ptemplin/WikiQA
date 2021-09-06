@@ -4,7 +4,7 @@ Author:
     Chris Chute (chute@stanford.edu)
 """
 
-import layers
+from bidaf import layers
 import torch
 import torch.nn as nn
 

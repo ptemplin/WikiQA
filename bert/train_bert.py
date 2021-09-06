@@ -22,10 +22,9 @@ import sys
 
 from datasets import Dataset, DatasetDict, load_dataset, load_metric
 
-import transformers
-from args import DataTrainingArguments, ModelArguments
-from bert_trainer import QuestionAnsweringTrainer
-from preparedata import prepare_train_features, prepare_validation_features
+from bert.args import DataTrainingArguments, ModelArguments
+from bert.bert_trainer import QuestionAnsweringTrainer
+from bert.preparedata import prepare_train_features, prepare_validation_features
 from transformers import (
     AutoConfig,
     AutoModelForQuestionAnswering,
@@ -38,7 +37,7 @@ from transformers import (
     default_data_collator,
     set_seed,
 )
-from util import postprocess_qa_predictions
+from bert.util import postprocess_qa_predictions
 
 
 logger = logging.getLogger(__name__)

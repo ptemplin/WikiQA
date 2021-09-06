@@ -17,7 +17,7 @@ import spacy
 import ujson as json
 import urllib.request
 
-from args import get_setup_args
+from bidaf.args import get_setup_args
 from codecs import open
 from collections import Counter
 from subprocess import run
