@@ -1,6 +1,6 @@
 import logging
 
-from datasets import Dataset, DatasetDict
+from datasets import Dataset
 
 from bert.args import DataTrainingArguments
 from bert.preparedata import prepare_validation_features
@@ -8,9 +8,7 @@ from transformers import (
     AutoConfig,
     AutoModelForQuestionAnswering,
     AutoTokenizer,
-    EvalPrediction,
     Trainer,
-    TrainingArguments,
 )
 from bert.util import postprocess_qa_predictions
 
@@ -34,34 +32,45 @@ Badcoe\'s medal set is now displayed in the Hall of Valour at the Australian War
 in Canberra. Buildings in South Vietnam and Australia have been named after him, as has a 
 perpetual medal at an Australian Football League match held on Anzac Day."""
 
-QUESTION = 'Who was Peter Badcoe?'
+QUESTION_COLUMN_NAME = "question"
+CONTEXT_COLUMN_NAME = "context"
+COLUMN_NAMES = ['id', 'context', 'question']
+
+
+def setup_logging():
+    logging.basicConfig(
+        format="%(asctime)s - %(levelname)s - %(name)s -   %(message)s",
+        datefmt="%m/%d/%Y %H:%M:%S",
+    )
+    logger.setLevel(logging.INFO)
+
+
+# Post-processing:
+def post_processing_function(examples, features, predictions):
+    # Post-processing: we match the start logits and end logits to answers in the original context.
+    predictions = postprocess_qa_predictions(
+        examples=examples,
+        features=features,
+        predictions=predictions,
+        version_2_with_negative=True,
+        output_dir='./save/'
+    )
+
+    formatted_predictions = [
+        {"id": k, "prediction_text": v, "no_answer_probability": 0.0} for k, v in predictions.items()
+    ]
+    return formatted_predictions
 
 
 class QuestionAnsweringTrainer(Trainer):
-    def __init__(self, *args, eval_examples=None, post_process_function=None, **kwargs):
+    def __init__(self, *args, post_process_function=None, **kwargs):
         super().__init__(*args, **kwargs)
-        self.eval_examples = eval_examples
         self.post_process_function = post_process_function
 
-    def evaluate(self, eval_dataset=None, eval_examples=None, ignore_keys=None):
-        eval_dataset = self.eval_dataset if eval_dataset is None else eval_dataset
+    def evaluate(self, eval_dataset, eval_examples):
         eval_dataloader = self.get_eval_dataloader(eval_dataset)
-        eval_examples = self.eval_examples if eval_examples is None else eval_examples
 
-        # Temporarily disable metric computation, we will do it in the loop here.
-        compute_metrics = self.compute_metrics
-        self.compute_metrics = None
-        try:
-            output = self.prediction_loop(
-                eval_dataloader,
-                description="Evaluation",
-                # No point gathering the predictions if there are no metrics, otherwise we defer to
-                # self.args.prediction_loss_only
-                prediction_loss_only=True if compute_metrics is None else None,
-                ignore_keys=ignore_keys,
-            )
-        finally:
-            self.compute_metrics = compute_metrics
+        output = self.prediction_loop(eval_dataloader, description="Evaluation")
 
         # We might have removed columns from the dataset so we put them back.
         if isinstance(eval_dataset, Dataset):
@@ -70,34 +79,6 @@ class QuestionAnsweringTrainer(Trainer):
         eval_preds = self.post_process_function(eval_examples, eval_dataset, output.predictions)
 
         return eval_preds
-
-
-def setup_logging():
-    # Setup logging
-    logging.basicConfig(
-        format="%(asctime)s - %(levelname)s - %(name)s -   %(message)s",
-        datefmt="%m/%d/%Y %H:%M:%S",
-    )
-    logger.setLevel(logging.INFO)
-
-
-def load_data():
-    # Get the datasets: you can either provide your own CSV/JSON/TXT training and evaluation files (see below)
-    # or just provide the name of one of the public datasets available on the hub at https://huggingface.co/datasets/
-    # (the dataset will be downloaded automatically from the datasets Hub).
-    #
-    # For CSV/JSON files, this script will use the column called 'text' or the first column if no column called
-    # 'text' is found. You can easily tweak this behavior (see below).
-    #
-    # In distributed training, the load_dataset function guarantee that only one local process can concurrently
-    # download the dataset.
-    return DatasetDict({'validation': Dataset.from_dict({
-        'id': [1],
-        'answers': [['']],
-        'context': [CONTEXT],
-        'question': [QUESTION],
-        'title': ['']
-    })})
 
 
 def load_model():
@@ -110,63 +91,42 @@ def load_model():
 
 
 def run():
-    setup_logging()
-
-    # Load the data we're going to be using
-    datasets = load_data()
-
     # Load the model and tokenizer
     print('Loading model...')
     tokenizer, model = load_model()
     print('Loaded model')
 
-    question_column_name = "question"
-    context_column_name = "context"
-    answer_column_name = "answers"
-    column_names = ['id', 'answers', 'context', 'question', 'title']
-
-    validation_dataset = datasets["validation"].map(
-        lambda dataset: prepare_validation_features(dataset,
-                                                    tokenizer,
-                                                    question_column_name,
-                                                    context_column_name,
-                                                    DataTrainingArguments()),
-        batched=True,
-        remove_columns=column_names,
-        load_from_cache_file=True,
-    )
-
-    # Post-processing:
-    def post_processing_function(examples, features, predictions):
-        # Post-processing: we match the start logits and end logits to answers in the original context.
-        predictions = postprocess_qa_predictions(
-            examples=examples,
-            features=features,
-            predictions=predictions,
-            version_2_with_negative=True,
-            output_dir='./save/'
-        )
-
-        formatted_predictions = [
-            {"id": k, "prediction_text": v, "no_answer_probability": 0.0} for k, v in predictions.items()
-        ]
-        references = [{"id": ex["id"], "answers": ex[answer_column_name]} for ex in datasets["validation"]]
-        return EvalPrediction(predictions=formatted_predictions, label_ids=references)
-
-    # Initialize our Trainer
     trainer = QuestionAnsweringTrainer(
         model=model,
-        eval_dataset=validation_dataset,
-        eval_examples=datasets["validation"],
         post_process_function=post_processing_function,
-        compute_metrics=lambda x: {},
+        compute_metrics=None,
     )
 
-    results = trainer.evaluate()
+    question = input('What\'s your question?\n')
+    while question:
+        question_ds = Dataset.from_dict({
+            'id': [1],
+            'context': [CONTEXT],
+            'question': [question]
+        })
 
-    print("Question: %s" % QUESTION)
-    print("Answer: %s" % results.predictions[0]['prediction_text'])
+        prepared_dataset = question_ds.map(
+            lambda ds: prepare_validation_features(ds,
+                                                   tokenizer,
+                                                   QUESTION_COLUMN_NAME,
+                                                   CONTEXT_COLUMN_NAME,
+                                                   DataTrainingArguments()),
+            batched=True,
+            remove_columns=COLUMN_NAMES,
+            load_from_cache_file=True,
+        )
+
+        predictions = trainer.evaluate(eval_dataset=prepared_dataset, eval_examples=question_ds)
+        print("I believe the answer is %s." % predictions[0]['prediction_text'])
+
+        question = input('Any other questions?\n')
 
 
 if __name__ == '__main__':
+    setup_logging()
     run()
