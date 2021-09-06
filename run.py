@@ -18,9 +18,23 @@ from bert.util import postprocess_qa_predictions
 logger = logging.getLogger(__name__)
 
 
-PRETRAINED_MODEL_DIR = './save/train/bert-base_04/checkpoint-49000/'
+PRETRAINED_MODEL_DIR = './save/'
 
 DATA_PARAMS = DataTrainingArguments()
+
+CONTEXT = """
+Peter Badcoe (11 January 1934 – 7 April 1967) was an Australian recipient of the Victoria Cross, 
+the highest award for gallantry in battle that could be awarded at that time to a member of 
+the Australian armed forces. Badcoe joined the Australian Army in 1950 and graduated from the 
+Officer Cadet School, Portsea, in 1952. Posted to South Vietnam in 1966, Badcoe displayed conspicuous 
+gallantry and leadership on three occasions between February and April 1967. In the final battle, 
+he was killed by a burst of machine-gun fire. He was posthumously awarded the Victoria Cross 
+for his actions, as well as the United States Silver Star and several South Vietnamese medals. 
+Badcoe\'s medal set is now displayed in the Hall of Valour at the Australian War Memorial 
+in Canberra. Buildings in South Vietnam and Australia have been named after him, as has a 
+perpetual medal at an Australian Football League match held on Anzac Day."""
+
+QUESTION = 'Who was Peter Badcoe?'
 
 
 class QuestionAnsweringTrainer(Trainer):
@@ -80,8 +94,8 @@ def load_data():
     return DatasetDict({'validation': Dataset.from_dict({
         'id': [1],
         'answers': [['']],
-        'context': ['Peter Badcoe (11 January 1934 – 7 April 1967) was an Australian recipient of the Victoria Cross, the highest award for gallantry in battle that could be awarded at that time to a member of the Australian armed forces. Badcoe joined the Australian Army in 1950 and graduated from the Officer Cadet School, Portsea, in 1952. Posted to South Vietnam in 1966, Badcoe displayed conspicuous gallantry and leadership on three occasions between February and April 1967. In the final battle, he was killed by a burst of machine-gun fire. He was posthumously awarded the Victoria Cross for his actions, as well as the United States Silver Star and several South Vietnamese medals. Badcoe\'s medal set is now displayed in the Hall of Valour at the Australian War Memorial in Canberra. Buildings in South Vietnam and Australia have been named after him, as has a perpetual medal at an Australian Football League match held on Anzac Day.'],
-        'question': ['What have been named after Peter Badcoe?'],
+        'context': [CONTEXT],
+        'question': [QUESTION],
         'title': ['']
     })})
 
@@ -102,7 +116,9 @@ def run():
     datasets = load_data()
 
     # Load the model and tokenizer
+    print('Loading model...')
     tokenizer, model = load_model()
+    print('Loaded model')
 
     question_column_name = "question"
     context_column_name = "context"
@@ -128,7 +144,7 @@ def run():
             features=features,
             predictions=predictions,
             version_2_with_negative=True,
-            output_dir='./save/bert'
+            output_dir='./save/'
         )
 
         formatted_predictions = [
@@ -140,17 +156,16 @@ def run():
     # Initialize our Trainer
     trainer = QuestionAnsweringTrainer(
         model=model,
-        args=TrainingArguments(output_dir='./save/bert'),
         eval_dataset=validation_dataset,
         eval_examples=datasets["validation"],
         post_process_function=post_processing_function,
         compute_metrics=lambda x: {},
     )
 
-    logger.info("*** Have a question? ***")
     results = trainer.evaluate()
 
-    print(results)
+    print("Question: %s" % QUESTION)
+    print("Answer: %s" % results.predictions[0]['prediction_text'])
 
 
 if __name__ == '__main__':

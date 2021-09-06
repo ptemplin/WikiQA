@@ -76,7 +76,7 @@ def postprocess_qa_predictions(
 
     # Logging.
     logger.setLevel(logging.INFO if is_world_process_zero else logging.WARN)
-    logger.info(f"Post-processing {len(examples)} example predictions split into {len(features)} features.")
+    logger.debug(f"Post-processing {len(examples)} example predictions split into {len(features)} features.")
 
     # Let's loop over all the examples!
     for example_index, example in enumerate(tqdm(examples)):
@@ -209,14 +209,14 @@ def postprocess_qa_predictions(
                 output_dir, "null_odds.json" if prefix is None else f"null_odds_{prefix}".json
             )
 
-        logger.info(f"Saving predictions to {prediction_file}.")
+        logger.debug(f"Saving predictions to {prediction_file}.")
         with open(prediction_file, "w") as writer:
             writer.write(json.dumps(all_predictions, indent=4) + "\n")
-        logger.info(f"Saving nbest_preds to {nbest_file}.")
+        logger.debug(f"Saving nbest_preds to {nbest_file}.")
         with open(nbest_file, "w") as writer:
             writer.write(json.dumps(all_nbest_json, indent=4) + "\n")
         if version_2_with_negative:
-            logger.info(f"Saving null_odds to {null_odds_file}.")
+            logger.debug(f"Saving null_odds to {null_odds_file}.")
             with open(null_odds_file, "w") as writer:
                 writer.write(json.dumps(scores_diff_json, indent=4) + "\n")
 
