@@ -1,6 +1,7 @@
 import logging
 
 from bert.eval import ContextualQuestionAnswerer
+from wiki.extract import extract_wiki
 
 
 logger = logging.getLogger(__name__)
@@ -17,6 +18,8 @@ Badcoe\'s medal set is now displayed in the Hall of Valour at the Australian War
 in Canberra. Buildings in South Vietnam and Australia have been named after him, as has a 
 perpetual medal at an Australian Football League match held on Anzac Day."""
 
+WIKI_PAGE = 'Four Candles'
+
 
 def setup_logging():
     logging.basicConfig(
@@ -31,9 +34,13 @@ def run():
     answerer = ContextualQuestionAnswerer()
     print('Loaded model')
 
+    print('Downloading context...')
+    context = extract_wiki(WIKI_PAGE)
+    print('Context ready')
+
     question = input('What\'s your question?\n')
     while question:
-        results = answerer.evaluate(question, CONTEXT)
+        results = answerer.evaluate(question, context)
         print("I believe the answer is %s." % results[0]['text'])
 
         question = input('Any other questions?\n')

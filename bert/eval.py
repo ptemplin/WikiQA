@@ -33,7 +33,7 @@ def post_processing_function(examples, features, predictions):
         features=features,
         predictions=predictions,
         version_2_with_negative=True,
-        output_dir='./save/'
+        output_dir=PRETRAINED_MODEL_DIR
     )
 
     formatted_predictions = [

@@ -1,0 +1,85 @@
+body {
+  margin: 0;
+}
+
+a {
+  text-decoration: none;
+  color: #1a0dab;
+}
+
+.App {
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+@keyframes fade-in {
+  0%   {opacity: 0%;}
+  100% {opacity: 100%;}
+}
+
+@keyframes fade-in-with-delay {
+  0%   {opacity: 0%;}
+  50%  {opacity: 0%;}
+  100% {opacity: 100%;}
+}
+
+h2 {
+  animation-name: fade-in-with-delay;
+  animation-duration: 3s;
+}
+
+#questionInput {
+  animation-name: fade-in-with-delay;
+  animation-duration: 6s;
+}
+
+input {
+  border: none;
+  border-bottom: 1px solid lightblue;
+  width: 532px;
+  height: 20px;
+  outline: none;
+  font-size: 18px;
+}
+
+.pageSelection {
+  margin: 16px;
+  position: absolute;
+  display: flex;
+  align-items: center;
+  bottom: 0;
+  right: 0;
+}
+
+.pageSelection input {
+  width: 240px;
+}
+
+.pageSelectionLabel {
+  margin: 0;
+  padding-right: 8px;
+  color: #555555;
+}
+
+::placeholder {
+  color: #cccccc;
+}
+
+.loadingState {
+  animation-name: fade-in;
+  animation-duration: 2s;
+  animation-iteration-count: infinite;
+  animation-direction: alternate;
+}
+
+.answerContainer {
+  border: 1px solid #dfe1e5;
+  border-radius: 5px;
+  padding: 16px;
+  width: 500px;
+  margin-top: 16px;
+}
